@@ -14,24 +14,26 @@ Install this package:
 Example:
 --------
 
-    package main
+````go
+package main
+
+import (
+    "fmt"
+    "github.com/secesh/gantlabs/innGate"
+)
+func main(){    
+    ant := innGateApi.Host{ Host : "ant.example.com" }
     
-    import (
-        "fmt"
-        "github.com/secesh/gantlabs/innGate"
-    )
-    func main(){    
-        ant := innGateApi.Host{ Host : "ant.example.com" }
-        
-        resp, _ := ant.ApiVersion()
-        fmt.Println("API_Version:", resp.ApiVersion)
-        
-        resp2, _ := ant.AccountGetAll(innGateApi.AccountGetAllRequest{Creator : "admin"})
-        fmt.Println("Got", resp2.Count, "accounts")
+    resp, _ := ant.ApiVersion()
+    fmt.Println("API_Version:", resp.ApiVersion)
     
-        resp3, _ := ant.AccountDelete(innGateApi.AccountDeleteRequest{Code : []string{"abc123", "def456"}})
-        fmt.Println("Deleted", resp3.Deleted, "accounts")
-    }
+    resp2, _ := ant.AccountGetAll(innGateApi.AccountGetAllRequest{Creator : "admin"})
+    fmt.Println("Got", resp2.Count, "accounts")
+
+    resp3, _ := ant.AccountDelete(innGateApi.AccountDeleteRequest{Code : []string{"abc123", "def456"}})
+    fmt.Println("Deleted", resp3.Deleted, "accounts")
+}
+````
 
 Contact:
 --------
