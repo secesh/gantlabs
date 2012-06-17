@@ -20,7 +20,7 @@ package innGateApi
 
 import (
 	"antlabs"
-	"fmt"
+	//"fmt"
 	"strconv"
 	"regexp"
 	"strings"
@@ -277,8 +277,6 @@ func (api *Host) AccountGet(request AccountGetRequest) (result *accountGetRespon
 	parsed_body, err := ant.InnGateApiRequest(query)
 	if( err != nil){ return nil, err }
 	
-	fmt.Println(parsed_body)
-	
 	err = result.findCommoners(parsed_body)
 	//if( err != nil){ return nil, err }
 	
@@ -477,7 +475,7 @@ func (api *Host) AccountGetAll(arg interface{}) (result *accountGetAllResponse, 
 			result.Count, err = strconv.ParseInt(v[2], 10, 64)
 			if(err != nil){ return nil, err }
 		default:
-			fmt.Println(v[1])
+			//fmt.Println(v[1])
 		}
 	}
 	result.Accounts = records
