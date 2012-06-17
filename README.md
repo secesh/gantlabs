@@ -34,6 +34,54 @@ func main(){
     fmt.Println("Deleted", resp3.Deleted, "accounts")
 }
 ````
+InnGate API Status:
+-------
+Below is a list of API modules supported by the ANTLabs InnGate.
+  * **Bold** modules are implemented.
+  * Non-bold modules are not yet implemented.
+
+Account
+  * account_add
+  * **account_delete**
+  * **account_get**
+  * **account_get_all**
+  * account_update
+API
+  * **api_module**
+  * **api_modules**
+  * api_password_get (only available to native PHP API)
+  * **api_version**
+Authentication
+  * **auth_authenticate** (not tested)
+  * auth_init
+  * **auth_login** (not tested)
+  * auth_logout
+  * auth_update
+  * sid_get
+  * publicip_get
+Plan
+  * plan_get_all
+  * plan_get_id
+Data
+  * data_get
+  * data_set
+  * data_get_keys
+  * data_get_names
+  * data_delete
+Property Management System (PMS)
+  * pms_billing_log
+  * pms_guest_status
+  * pms_post_check
+  * pms_post
+  * pms_room_status
+Network
+  * vlan_get
+  * vlan_update
+  * device_status
+Credit Card
+  * cc_payflowpro_post
+Miscellaneous
+  * browser
 
 Contact:
 --------
