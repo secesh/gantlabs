@@ -54,100 +54,11 @@ type responseCommon struct{
 	Error         string
 	ModuleVersion float64
 }
-
 type requestCommon struct{
 	op         string
 }
-//These structs are used when op=account_get
-type accountGetResponse struct{
-	responseCommon
-	UserId       []string
-	Code         []string
-	SharingIndex []int64
-	ClientMac    []string
-	Description  []string
-	Enabled      []bool
-	ValidFrom    []time.Time
-	ValidUntil   []time.Time
-	LoginLimit   []bool
-	LoginMax     []int64
-	LoginCount   []int64
-	SharingMax   []int64
-	Plan         []string
-	DurationBalance []string
-	VolumeBalance   []string
-	CreateTime      []time.Time
-	UpdateTime      []time.Time
-}
-type AccountGetRequest struct{
-	requestCommon
-	UserId, Code, ClientMac string
-}
-//These structs are used when op=auth_authenticate
-type authAuthenticateResponse struct{
-	responseCommon
-	RadiusAttrs []string
-}
-type AuthAuthenticateRequest struct{
-	requestCommon
-	Code string
-	UserId, Password string
-	Mode string
-}
 
-//These structs are used when op=account_get_all
-type accountGetAllResponse struct{
-	responseCommon
-	Count int64
-	Header []string
-	Accounts []Account
-}
-type AccountGetAllRequest struct{
-	requestCommon
-	ValidFromStart, ValidFromEnd, ValidUntilStart, ValidUntilEnd time.Time
-	Creator, Description, Type string
-	CreatedStart, CreatedEnd, PlanName string
-}
-
-//These structs are used when op=account_delete
-type accountDeleteResponse struct{
-	responseCommon
-	Deleted int64
-}
-type AccountDeleteRequest struct{
-	requestCommon
-	UserId, Code interface{}
-}
-//These structs are used when op=api_module
-type moduleResponse struct{
-	responseCommon
-	Version float64
-}
-type ModuleRequest struct{
-	requestCommon
-	Module string
-}
-
-//These structs are used when op=api_modules
-type modulesResponse struct{
-	responseCommon
-	Count   int64
-	Modules map[string]float64
-}
-type modulesRequest struct{
-	requestCommon
-}
-
-//These structs are used when op=api_version
-type versionResponse struct{
-	responseCommon
-	ApiVersion float64
-}
-type versionRequest struct{
-	requestCommon
-}
-
-
+////////////////////////////////////////////////////////////////////////////////////////
 //findCommoners scans the field:value map for API elements common to every API response.
 func (common *responseCommon) findCommoners(parsed_body [][]string) (err error){
 	for _, v := range parsed_body{
@@ -179,8 +90,7 @@ func (common *responseCommon) findCommoners(parsed_body [][]string) (err error){
 	
 	return
 }
-
-
+//////////////////////////////////////////////////////////
 
 //  Module performs an API request for op=api_module
 //  
@@ -216,6 +126,15 @@ func (api *Host) Module(request ModuleRequest) (result *moduleResponse, err erro
 	
 	return result, nil
 }
+type moduleResponse struct{
+	responseCommon
+	Version float64
+}
+type ModuleRequest struct{
+	requestCommon
+	Module string
+}
+//////////////////////////////////////////////////////////
 
 //  Modules performs an API request for op=api_modules
 //  
@@ -262,6 +181,15 @@ func (api *Host) Modules() (result *modulesResponse, err error){
 	
 	return result, nil
 }
+type modulesResponse struct{
+	responseCommon
+	Count   int64
+	Modules map[string]float64
+}
+type modulesRequest struct{
+	requestCommon
+}
+//////////////////////////////////////////////////////////
 
 //  AuthAuthenticate performs an API request for op=auth_authenticate
 //  
@@ -302,6 +230,107 @@ func (api *Host) AuthAuthenticate(request AuthAuthenticateRequest) (result *auth
 	
 	return result, nil
 }
+type authAuthenticateResponse struct{
+	responseCommon
+	RadiusAttrs []string
+}
+type AuthAuthenticateRequest struct{
+	requestCommon
+	Code string
+	UserId, Password string
+	Mode string
+}
+//////////////////////////////////////////////////////////
+
+//  AuthLogin performs the an API request for op=auth_login
+//  
+//  This method requires one argument of type innGateApi.AuthLoginRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.AuthLogin(innGateApi.AuthLoginRequest{Sid : "86cb1a5deb036467a9c2bc36e13971ef"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("\n\nLogin result:", resp.Result)
+func (api *Host) AuthLogin(request AuthLoginRequest) (result *authLoginResponse, err error){
+	ant := api.ant()
+	request.op = "auth_login" 
+	result     = &authLoginResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.Sid != ""){ 
+		query += "&sid=" + html.EscapeString(request.Sid) 
+	}else{
+		//If we're not using SID, we must be using the following.  We don't need to check for
+		//values because if we're missing parameters the API will cause the request to fail.
+		query += "&client_mac=" + html.EscapeString(request.ClientMac)
+		query += "&client_ip=" + html.EscapeString(request.ClientIp)
+		query += "&location_index=" + strconv.Itoa(request.LocationIndex, 10, 64)
+		query += "&ppli=" + html.EscapeString(request.Ppli)
+	}
+	if(request.Mode != ""){ query += "&mode=" + html.EscapeString(request.Mode) }
+	if(request.Code != ""){ query += "&code=" + html.EscapeString(request.Code) }
+	if(request.UserId != ""){ query += "&userid=" + html.EscapeString(request.UserId) }
+	if(request.Password != ""){ query += "&password=" + html.EscapeString(request.Password) }
+	if(request.Secret != ""){ query += "&secret=" + html.EscapeString(request.Secret) }
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	for _, v := range parsed_body{
+		switch v[1]{
+	 	case "requestedURL":
+			result.RequestedUrl = v[2]
+		case "preloginURL":
+			result.PreLoginUrl = v[2]
+		case "publicip":
+			result.PublicIp = v[2]
+		case "sid":
+			result.Sid = v[2]
+		case "client_mac":
+			result.ClientMac = v[2]
+		case "client_ip":
+			result.ClientIp = v[2]
+		case "ppli":
+			result.Ppli = v[2]
+		case "vlan":
+			result.Vlan = v[2]
+		}
+	}
+	
+	return result, nil
+}
+type authLoginResponse struct{
+	responseCommon
+	RequestedUrl string
+	PreLoginUrl  string
+	PublicIp     string
+	Sid          string
+	ClientMac    string
+	ClientIp     string
+	Ppli         string
+	Vlan         string
+}
+type AuthLoginRequest struct{
+	requestCommon
+	//Required:
+	Sid string
+	//or:
+	ClientMac, ClientIp, Ppli string
+	LocationIndex int64
+	//Optional:
+	Mode string
+	Code string
+	UserId, Password string
+	Secret string
+}
+//////////////////////////////////////////////////////////
 
 //  AccountGet performs an API request for op=account_get
 //  
@@ -417,6 +446,31 @@ func (api *Host) AccountGet(request AccountGetRequest) (result *accountGetRespon
 	
 	return result, nil
 }
+type accountGetResponse struct{
+	responseCommon
+	UserId       []string
+	Code         []string
+	SharingIndex []int64
+	ClientMac    []string
+	Description  []string
+	Enabled      []bool
+	ValidFrom    []time.Time
+	ValidUntil   []time.Time
+	LoginLimit   []bool
+	LoginMax     []int64
+	LoginCount   []int64
+	SharingMax   []int64
+	Plan         []string
+	DurationBalance []string
+	VolumeBalance   []string
+	CreateTime      []time.Time
+	UpdateTime      []time.Time
+}
+type AccountGetRequest struct{
+	requestCommon
+	UserId, Code, ClientMac string
+}
+//////////////////////////////////////////////////////////
 
 //  AccountGetAll performs an API request for op=account_get_all
 //  
@@ -533,6 +587,19 @@ func (api *Host) AccountGetAll(arg interface{}) (result *accountGetAllResponse, 
 	result.Accounts = records
 	return result, nil
 }
+type accountGetAllResponse struct{
+	responseCommon
+	Count int64
+	Header []string
+	Accounts []Account
+}
+type AccountGetAllRequest struct{
+	requestCommon
+	ValidFromStart, ValidFromEnd, ValidUntilStart, ValidUntilEnd time.Time
+	Creator, Description, Type string
+	CreatedStart, CreatedEnd, PlanName string
+}
+//////////////////////////////////////////////////////////
 
 //  AccountDelete performs the an API request for op=account_delete
 //  
@@ -593,6 +660,15 @@ func (api *Host) AccountDelete(request AccountDeleteRequest) (result *accountDel
 	
 	return result, nil
 }
+type accountDeleteResponse struct{
+	responseCommon
+	Deleted int64
+}
+type AccountDeleteRequest struct{
+	requestCommon
+	UserId, Code interface{}
+}
+//////////////////////////////////////////////////////////
 
 //  ApiVersion performs the an API request for op=api_version
 //  
@@ -632,6 +708,14 @@ func (api *Host) ApiVersion() (result *versionResponse, err error){
 	
 	return result, nil
 }
+type versionResponse struct{
+	responseCommon
+	ApiVersion float64
+}
+type versionRequest struct{
+	requestCommon
+}
+//////////////////////////////////////////////////////////
 
 //ant = api.ant() is called at the beginning of every API method, which
 //provides invisible glue between the innGateApi package and the antlabs package.
