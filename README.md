@@ -2,9 +2,9 @@ Go library for ANTLabs devices
 ==============================
 
 This library provides communication with ANTLabs devices in the Go Language.
-Specifically, it implements the API for innGates.  This ANTLabs InnGate API
-is capable of mangaing accounts, authenticating users, retrieving information
-about plans, and processing billing through the PMS module (if enabled).
+Specifically, it implements the API for innGates.  The ANTLabs InnGate API
+is capable of managing accounts, authenticating users, retrieving information
+about plans and processing billing through the PMS module (if enabled).
 
 Install this package:
 ---------------------
@@ -33,3 +33,7 @@ Example:
         fmt.Println("Deleted", resp3.Deleted, "accounts")
     }
 
+Contact:
+--------
+
+gantlabs@chasefox.net

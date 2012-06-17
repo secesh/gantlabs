@@ -19,7 +19,7 @@
 package innGateApi
 
 import (
-	"antlabs"
+	"github.com/secesh/gantlabs"
 	//"fmt"
 	"strconv"
 	"regexp"
@@ -83,6 +83,18 @@ type AccountGetRequest struct{
 	requestCommon
 	UserId, Code, ClientMac string
 }
+//These structs are used when op=auth_authenticate
+type authAuthenticateResponse struct{
+	responseCommon
+	RadiusAttrs []string
+}
+type AuthAuthenticateRequest struct{
+	requestCommon
+	Code string
+	UserId, Password string
+	Mode string
+}
+
 //These structs are used when op=account_get_all
 type accountGetAllResponse struct{
 	responseCommon
@@ -245,6 +257,46 @@ func (api *Host) Modules() (result *modulesResponse, err error){
 	 			
 	 			result.Modules[moduleName] = moduleVersion
 	 		}
+		}
+	}
+	
+	return result, nil
+}
+
+//  AuthAuthenticate performs an API request for op=auth_authenticate
+//  
+//  This method requires one argument of type innGateApi.AuthAuthenticateRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.AuthAuthenticate(innGateApi.AuthAuthenticateRequest{Code: "abc123"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("\n\nResult of authentication request:", resp.Result)
+func (api *Host) AuthAuthenticate(request AuthAuthenticateRequest) (result *authAuthenticateResponse, err error){
+	ant := api.ant()
+	request.op   = "auth_authenticate" 
+	
+	result = &authAuthenticateResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.Code != ""){ query += "&code=" + request.Code }
+	if(request.UserId != ""){ query += "&userid=" + html.EscapeString(request.UserId)}
+	if(request.Password != ""){ query += "&password=" + html.EscapeString(request.Password)}
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	for _, v := range parsed_body{
+		switch v[1]{
+		case "radiusattrs":
+			result.RadiusAttrs = strings.Split(v[2], "|")
 		}
 	}
 	
