@@ -58,8 +58,8 @@ Authentication
   * **auth_authenticate** (not tested)
   * **auth_init**         (not tested)
   * **auth_login**        (not tested)
-  * auth_logout
-  * auth_update
+  * **auth_logout**       (not tested)
+  * **auth_update**       (not tested)
   * sid_get
   * publicip_get
   

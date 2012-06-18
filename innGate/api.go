@@ -332,6 +332,62 @@ type AuthLoginRequest struct{
 }
 //////////////////////////////////////////////////////////
 
+//  AuthLogout performs the an API request for op=auth_logout
+//  
+//  This method requires one argument of type innGateApi.AuthLoginRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.AuthLogout(innGateApi.AuthLogoutRequest{Sid : "86cb1a5deb036467a9c2bc36e13971ef"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("\n\nLogout result:", resp.Result)
+func (api *Host) AuthLogout(request AuthLogoutRequest) (result *authLogoutResponse, err error){
+	ant := api.ant()
+	request.op = "auth_logout" 
+	result     = &authLogoutResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.Sid != ""){ query += "&sid=" + html.EscapeString(request.Sid) }
+	if(request.ClientMac != ""){ query += "&client_mac=" + html.EscapeString(request.ClientMac) }
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	for _, v := range parsed_body{
+		switch v[1]{
+		case "accounting":
+			result.Accounting = v[2]
+		case "sid":
+			result.Sid = v[2]
+		case "client_mac":
+			result.ClientMac = v[2]
+		}
+	}
+	
+	return result, nil
+}
+type authLogoutResponse struct{
+	responseCommon
+	Accounting   string
+	Sid          string
+	ClientMac    string
+}
+type AuthLogoutRequest struct{
+	requestCommon
+	//Required:
+	Sid string
+	//or:
+	ClientMac string
+}
+//////////////////////////////////////////////////////////
+
 //  AuthInit performs the an API request for op=auth_init
 //  
 //  This method requires one argument of type innGateApi.AuthInitRequest.
@@ -404,6 +460,50 @@ type AuthInitRequest struct{
 	//Optional:
 	NewSid int64
 	Extra  string //up to you to make it a proper query string!  Start with an &!
+}
+//////////////////////////////////////////////////////////
+
+//  AuthUpdate performs the an API request for op=auth_update
+//  
+//  This method requires one argument of type innGateApi.AuthUpdateRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.AuthUpdate(innGateApi.AuthUpdateRequest{ClientMac : "00:00:00:00:00:00"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("\n\nUpdate result:", resp.Result)
+func (api *Host) AuthUpdate(request AuthUpdateRequest) (result *authUpdateResponse, err error){
+	ant := api.ant()
+	request.op = "auth_update"
+	result     = &authUpdateResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.ClientMac != ""){ query += "&client_mac=" + html.EscapeString(request.ClientMac) }
+	if(request.Duration != ""){ query += "&duration=" + request.Duration }
+	if(request.Volume != ""){ query += "&volume=" + request.Volume }
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	return result, nil
+}
+type authUpdateResponse struct{
+	responseCommon
+}
+type AuthUpdateRequest struct{
+	requestCommon
+	//Required:
+	ClientMac string
+	//Optional:
+	Duration  string //minutes.(int) expressed as string
+	Volume    string //bytes.(int) expressed as string
 }
 //////////////////////////////////////////////////////////
 
