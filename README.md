@@ -41,7 +41,7 @@ Below is a list of API modules supported by the ANTLabs InnGate.
   * Non-bold modules are not yet implemented.
 
 Account
-  * account_add
+  * **account_add** (not tested)
   * **account_delete**
   * **account_get**
   * **account_get_all**

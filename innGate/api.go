@@ -268,7 +268,7 @@ func (api *Host) AuthLogin(request AuthLoginRequest) (result *authLoginResponse,
 		//values because if we're missing parameters the API will cause the request to fail.
 		query += "&client_mac=" + html.EscapeString(request.ClientMac)
 		query += "&client_ip=" + html.EscapeString(request.ClientIp)
-		query += "&location_index=" + strconv.Itoa(request.LocationIndex, 10, 64)
+		query += "&location_index=" + strconv.FormatInt(request.LocationIndex, 10)
 		query += "&ppli=" + html.EscapeString(request.Ppli)
 	}
 	if(request.Mode != ""){ query += "&mode=" + html.EscapeString(request.Mode) }
@@ -329,6 +329,124 @@ type AuthLoginRequest struct{
 	Code string
 	UserId, Password string
 	Secret string
+}
+//////////////////////////////////////////////////////////
+
+//  AccountAdd performs the an API request for op=account_add
+//  
+//  This method requires one argument of type innGateApi.AccountAddRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.AccountAdd(innGateApi.AccountAddRequest{})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("\n\nLogin result:", resp.Result)
+func (api *Host) AccountAdd(request AccountAddRequest) (result *accountAddResponse, err error){
+	ant := api.ant()
+	request.op = "account_add"
+	result     = &accountAddResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.Type != ""){ query += "&type=" + request.Type }
+	if(request.UserId != ""){ query += "&userid=" + request.UserId }
+	if(request.UserIdFormat != ""){ query += "&userid_format=" + request.UserIdFormat }
+	if(request.UserIdLength != 0){ query += "&userid_length=" + strconv.FormatInt(request.UserIdLength, 10) }
+	if(request.UserIdPrefix != ""){ query += "&userid_prefix=" + request.UserIdPrefix }
+	if(request.UserIdSuffix != ""){ query += "&userid_suffix=" + request.UserIdSuffix }
+	if(request.UserIdStart != ""){ query += "&userid_start=" + request.UserIdStart }
+	if(request.Password != ""){ query += "&password=" + request.Password}
+	if(request.PasswordLength != 0){ query += "&password_length=" + strconv.FormatInt(request.PasswordLength, 10) }
+	if(request.PasswordFormat != ""){ query += "&password_format=" + request.PasswordFormat }
+	if(request.Code != ""){ query += "&code=" + request.Code }
+	if(request.CodeFormat != ""){ query += "&code_format=" + request.CodeFormat}
+	if(request.CodeStart != ""){ query += "&code_start=" + request.CodeStart }
+	if(request.CodeLength != 0){ query += "&code_length=" + strconv.FormatInt(request.CodeLength, 10) }
+	if(request.CodePrefix != ""){ query += "&code_prefix=" + request.CodePrefix}
+	if(request.CodeSuffix != ""){ query += "&code_suffix=" + request.CodeSuffix}
+	if(request.Count >1){ query += "&count=" + strconv.FormatInt(request.Count, 10) }
+	if(request.Description != ""){ query += "&description=" + request.Description }
+	if(request.ValidFrom != time.Time{}){query += "&valid_from=" + strconv.FormatInt(request.ValidFrom.Unix(), 10) }
+	if(request.ValidUntil != time.Time{}){query += "&valid_until=" + strconv.FormatInt(request.ValidUntil.Unix(), 10) }
+	if(request.LoginMax != ""){ query += "&login_max=" + request.LoginMax }
+	if(request.SharingMax != 0){ query += "&sharing_max=" + strconv.FormatInt(request.SharingMax, 10) }
+	if(request.BillingId != ""){ query += "&billing_id=" + request.BillingId }
+	query += "&allowed_login_zone=" + strconv.FormatInt(request.AllowedLoginZone, 10)
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	for _, v := range parsed_body{
+		switch v[1]{
+	 	case "created":
+	 		result.Created, err = strconv.ParseInt(v[2], 10, 64)
+	 		if( err != nil){ return nil, err }
+	 	case "userids":
+	 		result.UserIds = strings.Split(v[2], "|")
+	 	case "passwords":
+	 		result.Passwords = strings.Split(v[2], "|")
+	 	case "codes":
+	 		result.Codes = strings.Split(v[2], "|")
+		}
+	}
+	
+	return result, nil
+}
+type accountAddResponse struct{
+	responseCommon
+	Created   int64
+	UserIds   []string
+	Passwords []string
+	Codes     []string
+}
+type AccountAddRequest struct{
+	requestCommon
+	//Required:
+	Creator string
+	
+	PlanId string
+	//or:
+	PlanName string
+	
+	//All the following are optional:
+	Type string
+	
+	UserId string
+	//or:
+	UserIdFormat string //if !UserId ('alpha|alnum|num' default:alpha)
+	UserIdLength int64  //if !UserId (default:5 minimum:3)
+	UserIdPrefix string //if !UserId (default:'' max_length:20)
+	UserIdSuffix string //if !UserId (default:'' max_length:20)
+	
+	UserIdStart string //a number (expressed as a string) or "auto"
+	
+	Password       string
+	//or
+	PasswordLength int64  //if !Password (default:5 minumum:3)
+	PasswordFormat string //if !Password ('alpha|alnum|num' default:alnum)
+	
+	Code string //between 3 and 10 characters /[a-z0-9]/
+	//or:
+	CodeFormat   string //if !Code ('alpha|'alnum'|'num' defaule:alnum)
+	  CodeLength int64  //if !Code (default:5 minimum:3)
+	  CodePrefix string //if !Code (default:'' min_length:4)
+	  CodeSuffix string //if !Code (default:'' min_length:4)
+	CodeStart    string //if !Code a number (expressed as a string) or 'auto'
+	
+	Count        int64     //(default:1 max:100)
+	Description  string    //(max_length:255)
+	ValidFrom    time.Time //time.Time.Unix() will suffice for 'now'  ?(is that ow you get 'now')
+	ValidUntil   time.Time //or nil (or not set)
+	LoginMax     string //(default:'unlimited' otherwise an int expressed as string)
+	SharingMax        int64  //default:1 
+	BillingId         string //max_length:100; default:''
+	AllowedLoginZone  int64  //default:0
 }
 //////////////////////////////////////////////////////////
 
