@@ -60,7 +60,7 @@ Authentication
   * **auth_login**        (not tested)
   * **auth_logout**       (not tested)
   * **auth_update**       (not tested)
-  * sid_get
+  * **sid_get**           (not tested)
   * publicip_get
   
 Plan

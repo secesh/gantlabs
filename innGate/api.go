@@ -505,6 +505,79 @@ type AuthUpdateRequest struct{
 	Duration  string //minutes.(int) expressed as string
 	Volume    string //bytes.(int) expressed as string
 }
+
+//  SidGet performs the an API request for op=sid_get
+//  
+//  This method requires one argument of type innGateApi.SidGetRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.SidGet(innGateApi.SidGetRequest{sid : "86cb1a5deb036467a9c2bc36e13971ef"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("Client MAC:", resp.ClientMac)
+func (api *Host) SidGet(request SidGetRequest) (result *sidGetResponse, err error){
+	ant := api.ant()
+	request.op = "sid_get"
+	result     = &sidGetResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	query += "&sid=" + request.Sid
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	//initialize the ExtraFields map so we can add to it later if necessary:
+	result.Extra = make(map[string]string)
+	for _, v := range parsed_body{
+		switch v[1]{
+	 	case "sid":
+	 		result.Sid = v[2]
+	 	case "client_mac":
+	 		result.ClientMac = v[2]
+	 	case "ppli":
+	 		result.Ppli = v[2]
+ 		case "vlan":
+ 			result.Vlan = v[2]
+ 		case "client_ip":
+ 			result.ClientIp = v[2]
+ 		case "location_index":
+ 			result.LocationIndex = v[2]
+ 		//Ignore the commoners.
+ 		case "op":
+ 		case "version":
+ 		case "result":
+ 		case "resultcode":
+ 		case "error":
+ 		//Handle what's left as an extra-field
+ 		default:
+ 			result.Extra[v[1]] = v[2]
+ 		}
+ 	}
+	
+	return result, nil
+}
+type sidGetResponse struct{
+	responseCommon
+	Sid           string
+	ClientMac     string
+	Ppli          string
+	Vlan          string
+	ClientIp      string
+	LocationIndex string
+	Extra         map[string]string
+}
+type SidGetRequest struct{
+	requestCommon
+	//Required:
+	Sid string
+}
 //////////////////////////////////////////////////////////
 
 //  AccountAdd performs the an API request for op=account_add
