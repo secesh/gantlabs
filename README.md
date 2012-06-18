@@ -2,9 +2,10 @@ Go library for ANTLabs devices
 ==============================
 
 This library provides communication with ANTLabs devices in the Go Language.
-Specifically, it implements the API for innGates.  The ANTLabs InnGate API
-is capable of managing accounts, authenticating users, retrieving information
-about plans and processing billing through the PMS module (if enabled).
+Specifically, it implements the API for innGate gateways.  The ANTLabs 
+InnGate API is capable of managing accounts, authenticating users, retrieving
+information about plans and processing billing through the PMS module (if 
+enabled). In other words, this library implements the antlabs api in golang.
 
 Install this package:
 ---------------------
@@ -41,7 +42,7 @@ Below is a list of API modules supported by the ANTLabs InnGate.
   * Non-bold modules are not yet implemented.
 
 Account
-  * **account_add** (not tested)
+  * **account_add**       (not tested)
   * **account_delete**
   * **account_get**
   * **account_get_all**
@@ -50,13 +51,13 @@ Account
 API
   * **api_module**
   * **api_modules**
-  * api_password_get (only available to native PHP API)
+  * api_password_get  (only available to native PHP API)
   * **api_version**
   
 Authentication
   * **auth_authenticate** (not tested)
-  * auth_init
-  * **auth_login** (not tested)
+  * **auth_init**         (not tested)
+  * **auth_login**        (not tested)
   * auth_logout
   * auth_update
   * sid_get

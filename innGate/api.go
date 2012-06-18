@@ -332,6 +332,81 @@ type AuthLoginRequest struct{
 }
 //////////////////////////////////////////////////////////
 
+//  AuthInit performs the an API request for op=auth_init
+//  
+//  This method requires one argument of type innGateApi.AuthInitRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.AuthInit(innGateApi.AuthInitRequest{
+//     ClientMac     : "00:00:00:00:00:00",  //TODO: unknown formatting
+//     ClientIP      : "10.1.1.42",          //TODO: confirm formatting
+//     LocationIndex : 0,
+//     Ppli          : ""                    //TODO: I forget what this is.
+//  })
+//  if(err != nil){ panic(err) }
+//  fmt.Println("\n\nInit result:", resp.Result)
+func (api *Host) AuthInit(request AuthInitRequest) (result *authInitResponse, err error){
+	ant := api.ant()
+	request.op = "auth_init" 
+	result     = &authInitResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.ClientMac != ""){ query += "&client_mac=" + request.ClientMac }
+	if(request.ClientIp  != ""){ query += "&client_ip="  + request.ClientIp  }
+	if(request.LocationIndex != ""){ query += "&location_index=" + request.LocationIndex }
+	if(request.Ppli != ""){ query += "&ppli=" + request.Ppli }
+	if(request.NewSid != 0){ query += "&new_sid=" + strconv.FormatInt(request.NewSid, 10) }
+	if(request.Extra  != ""){ query += request.Extra }
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	for _, v := range parsed_body{
+		switch v[1]{
+		case "sid":
+			result.Sid       = v[2]
+		case "client_mac":
+			result.ClientMac = v[2]
+		case "client_ip":
+			result.ClientIp  = v[2]
+		case "ppli":
+			result.Ppli      = v[2]
+		case "vlan":
+			result.Vlan      =v[2]
+		}
+	}
+	
+	return result, nil
+}
+type authInitResponse struct{
+	responseCommon
+	Sid       string
+	ClientMac string
+	ClientIp  string
+	Ppli      string
+	Vlan      string
+}
+type AuthInitRequest struct{
+	requestCommon
+	//Required:
+	ClientMac     string
+	ClientIp      string
+	LocationIndex string
+	Ppli          string
+	//Optional:
+	NewSid int64
+	Extra  string //up to you to make it a proper query string!  Start with an &!
+}
+//////////////////////////////////////////////////////////
+
 //  AccountAdd performs the an API request for op=account_add
 //  
 //  This method requires one argument of type innGateApi.AccountAddRequest.
