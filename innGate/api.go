@@ -1036,6 +1036,85 @@ type AccountDeleteRequest struct{
 }
 //////////////////////////////////////////////////////////
 
+//  AuthLogin performs the an API request for op=auth_login
+//  
+//  This method requires one argument of type innGateApi.AuthLoginRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.AuthLogin(innGateApi.AuthLoginRequest{Sid : "86cb1a5deb036467a9c2bc36e13971ef"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("\n\nLogin result:", resp.Result)
+func (api *Host) AccountUpdate(request AccountUpdateRequest) (result *accountUpdateResponse, err error){
+	ant := api.ant()
+	request.op = "account_update" 
+	result     = &accountUpdateResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.Password != ""){ query += "&password=" + html.EscapeString(request.Password) }
+	if(request.PasswordLength >0){ query += "&password_length=" + strconv.FormatInt(request.PasswordLength, 10)}
+	if(request.PasswordFormat != ""){ query += "&password_format=" + request.PasswordFormat }
+	if(request.Description != ""){ query += "&description=" + request.Description }
+	if(request.ValidFrom != time.Time{}){ query += "&valid_from=" + strconv.FormatInt(request.ValidFrom.Unix(), 10)}
+	if(request.ValidUntil != time.Time{}){ query += "&valid_until=" + strconv.FormatInt(request.ValidUntil.Unix(), 10)}
+	if(request.LoginLimit){
+		query += "&login_limit=on"
+	}else{
+		query += "&login_limit=off"
+	}
+	if(request.LoginMax > 0){ query += "&login_max=" + strconv.FormatInt(request.LoginMax, 10) }
+	if(request.SharingMax > 0){ query += "&sharing_max=" + strconv.FormatInt(request.SharingMax, 10) }
+	if(request.PlanId > 0){ query += "&plan_id=" + strconv.FormatInt(request.PlanId, 10) }
+	if(request.PlanName != ""){ query += "&plan_name=" + request.PlanName }
+	if(request.AllowedLoginZone > 0){ query += "&allowed_login_zone=" + strconv.FormatInt(request.AllowedLoginZone, 10) }
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	for _, v := range parsed_body{
+		switch v[1]{
+		case "password":
+			result.Password = v[2]
+		}
+	}
+	
+	return result, nil
+}
+type accountUpdateResponse struct{
+	responseCommon
+	Password  string
+}
+type AccountUpdateRequest struct{
+	requestCommon
+	//Required:
+	UserId           string
+	//or:
+	Code             string
+	//Optional:
+	Password         string
+	PasswordLength   int64
+	PasswordFormat   string //alpha|alnum|num (default alnum)
+	Description      string
+	ValidUntil       time.Time
+	ValidFrom        time.Time
+	LoginLimit       bool
+	LoginMax         int64
+	SharingMax       int64
+	AllowedLoginZone int64
+	//If account has never logged in (optional):
+	PlanId         int64
+	//or:
+	PlanName       string
+}
+//////////////////////////////////////////////////////////
+
 //  PublicIp performs the an API request for op=publicip_get
 //  
 //  This method requires one argument of type innGateApi.PublicIpRequest.
