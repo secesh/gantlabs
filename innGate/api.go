@@ -30,23 +30,6 @@ import (
 )
 
 
-type Account struct{
-	Type    string
-	Creator string
-	UserId  string
-	Code    string
-	Description string
-	Enable      bool
-	ValidFrom   time.Time
-	ValidUntil  time.Time
-	LoginLimit  bool
-	LoginMax, LoginCount, SharingMax int64
-	UserGroupName string
-	CreateTime    string
-	UpdateTime    string
-	Accounting    string
-	BillingId     string
-}
 type responseCommon struct{
 	Op            string
 	Result        string
@@ -953,6 +936,23 @@ func (api *Host) AccountGetAll(arg interface{}) (result *accountGetAllResponse, 
 	result.Accounts = records
 	return result, nil
 }
+type Account struct{
+	Type    string
+	Creator string
+	UserId  string
+	Code    string
+	Description string
+	Enable      bool
+	ValidFrom   time.Time
+	ValidUntil  time.Time
+	LoginLimit  bool
+	LoginMax, LoginCount, SharingMax int64
+	UserGroupName string
+	CreateTime    string
+	UpdateTime    string
+	Accounting    string
+	BillingId     string
+}
 type accountGetAllResponse struct{
 	responseCommon
 	Count int64
@@ -1127,7 +1127,7 @@ type AccountUpdateRequest struct{
 //  }
 //  resp, err := ant.PublicIp(innGateApi.PublicIpRequest{Sid : "86cb1a5deb036467a9c2bc36e13971ef"})
 //  if(err != nil){ panic(err) }
-//  fmt.Println("Result:", resp.Result)
+//  fmt.Println("IP:", resp.Ip)
 func (api *Host) PublicIp(request PublicIpRequest) (result *publicIpResponse, err error){
 	ant := api.ant()
 	request.op = "publicip_get"
@@ -1150,6 +1150,8 @@ func (api *Host) PublicIp(request PublicIpRequest) (result *publicIpResponse, er
 	for _, v := range parsed_body{
 		//TODO: API does not indicate a field that returns the IP.  Need testing with a site that gives out Public IPs.
 		switch v[1]{
+		case "public_ip":
+			result.PublicIp = v[2]
 	 	default: 
 	 		//fmt.Println("unknown key: " + v[1])
 	 	}
@@ -1159,6 +1161,7 @@ func (api *Host) PublicIp(request PublicIpRequest) (result *publicIpResponse, er
 }
 type publicIpResponse struct{
 	responseCommon
+	PublicIp       string
 	
 }
 type PublicIpRequest struct{
@@ -1212,6 +1215,146 @@ type versionResponse struct{
 }
 type versionRequest struct{
 	requestCommon
+}
+//////////////////////////////////////////////////////////
+
+//  PlanAll performs the an API request for op=plan_get_all
+//  
+//  This method neither requires nor accepts any arguments.
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.PlanAll()
+//  if(err != nil){ panic(err) }
+//  fmt.Println("Result:", resp.Result)
+func (api *Host) PlanAll() (result *planAllResponse, err error){
+	ant := api.ant()
+	request   := planAllRequest{}
+	request.op = "plan_get_all"
+	result     = &planAllResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	recordIdentifier := regexp.MustCompile(`record_(\d+)`)
+	records          := make([]Plan, 0, 0)
+	for _, v := range parsed_body{
+		switch {
+		case recordIdentifier.MatchString(v[1]):
+			plan := Plan{}
+			line    := strings.Split(v[2], "|")
+			if(len(line) != 18){ return nil, errors.New("Unknown account information (unexpected array length" + strconv.Itoa(len(line)) +").")}
+			plan.Id, err                = strconv.ParseInt(line[ 0], 10, 64)
+			if(err != nil){ return nil, err }
+			plan.Price                  = line[ 1]
+			plan.AuthenticationType     = line[ 2]
+			if(line[ 3] == "on"){ plan.DurationLimit = true }
+			plan.ValidDuration, err     = strconv.ParseInt(line[ 4], 10, 64)
+			if(err != nil){ return nil, err }
+			if(line[ 5] == "on"){ plan.VolumeLimit = true }
+			plan.ValidVolume, err       = strconv.ParseInt(line[ 6], 10, 64)
+			if(err != nil){ return nil, err }
+			plan.VolumeExpiredAction    = line[ 7]
+			if(line[ 8] == "on"){ plan.DownloadLimit = true }
+			plan.DownloadBandwidth, err = strconv.ParseInt(line[ 9], 10, 64)
+			plan.DownloadUnits          = line[10]
+			if(line[11] == "on"){ plan.UploadLimit = true }
+			plan.UploadBandwidth, err   = strconv.ParseInt(line[12], 10, 64)
+			plan.UploadUnit             = line[13]
+			plan.PublicIp               = line[14]
+			if(line[15] == "on"){ plan.Relogin = true }
+			if(line[16] == "on"){ plan.FairUse = true }
+			plan.Name                   = line[17]
+
+			records = append(records, plan)
+		default:
+			//fmt.Println(v[1])
+		}
+	}
+	result.Plans = records
+	
+	return result, nil
+}
+type Plan struct{
+	Id              int64
+	Price               string
+	AuthenticationType  string
+	DurationLimit       bool
+	ValidDuration       int64  //in minutes
+	VolumeLimit         bool
+	ValidVolume         int64  //in MB
+	VolumeExpiredAction string
+	DownloadLimit       bool
+	DownloadBandwidth   int64
+	DownloadUnits       string
+	UploadLimit         bool
+	UploadBandwidth     int64
+	UploadUnit          string
+	PublicIp            string
+	Relogin             bool
+	FairUse             bool
+	Name            string
+}
+type planAllResponse struct{
+	responseCommon
+	Plans           []Plan
+}
+type planAllRequest struct{
+	requestCommon
+}
+//////////////////////////////////////////////////////////
+
+//  PlanId performs the an API request for op=plan_get_id
+//  
+//  This method requires one argument of type innGateApi.PlanIdRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.PlanId(innGateApi.PlanIdRequest{Name : "Guest"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("Id:", resp.Id)
+func (api *Host) PlanId(request PlanIdRequest) (result *planIdResponse, err error){
+	ant := api.ant()
+	request.op = "plan_get_id"
+	result     = &planIdResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	query += "&plan_name=" + request.Name
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	for _, v := range parsed_body{
+		switch v[1]{
+		case "plan_id":
+			result.Id, err = strconv.ParseInt(v[2], 10, 64)
+			if( err != nil){ return nil, err }
+		}
+	}
+	
+	return result, nil
+}
+type planIdResponse struct{
+	responseCommon
+	Id             int64
+}
+type PlanIdRequest struct{
+	requestCommon
+	Name           string
 }
 //////////////////////////////////////////////////////////
 

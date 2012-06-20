@@ -38,15 +38,15 @@ func main(){
 InnGate API Status:
 -------
 Below is a list of API modules supported by the ANTLabs InnGate.
-  * **Bold** modules are implemented.
+  * **Bold** modules are implemented (but not much testing yet).
   * Non-bold modules are not yet implemented.
 
 Account
-  * **account_add**       (not tested)
+  * **account_add**
   * **account_delete**
   * **account_get**
   * **account_get_all**
-  * account_update
+  * **account_update**
   
 API
   * **api_module**
@@ -55,17 +55,17 @@ API
   * **api_version**
   
 Authentication
-  * **auth_authenticate** (not tested)
-  * **auth_init**         (not tested)
-  * **auth_login**        (not tested)
-  * **auth_logout**       (not tested)
-  * **auth_update**       (not tested)
-  * **sid_get**           (not tested)
-  * **publicip_get**      (not tested)
+  * **auth_authenticate**
+  * **auth_init**
+  * **auth_login**
+  * **auth_logout**
+  * **auth_update**
+  * **sid_get**
+  * **publicip_get**
   
 Plan
-  * plan_get_all
-  * plan_get_id
+  * **plan_get_all**
+  * **plan_get_id**
   
 Data
   * data_get
