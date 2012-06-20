@@ -61,7 +61,7 @@ Authentication
   * **auth_logout**       (not tested)
   * **auth_update**       (not tested)
   * **sid_get**           (not tested)
-  * publicip_get
+  * **publicip_get**      (not tested)
   
 Plan
   * plan_get_all

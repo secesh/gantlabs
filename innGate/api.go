@@ -1036,6 +1036,59 @@ type AccountDeleteRequest struct{
 }
 //////////////////////////////////////////////////////////
 
+//  PublicIp performs the an API request for op=publicip_get
+//  
+//  This method requires one argument of type innGateApi.PublicIpRequest.
+//  See the ANTLabs API for more information regarding elements of the argument.  
+//  The example below demonstrates how to send a request.
+//
+//Example: 
+//  ant := innGateApi.Host{ 
+// 	   Host : "ant.example.com", //can be an IP or hostname
+//  }
+//  resp, err := ant.PublicIp(innGateApi.PublicIpRequest{Sid : "86cb1a5deb036467a9c2bc36e13971ef"})
+//  if(err != nil){ panic(err) }
+//  fmt.Println("Result:", resp.Result)
+func (api *Host) PublicIp(request PublicIpRequest) (result *publicIpResponse, err error){
+	ant := api.ant()
+	request.op = "publicip_get"
+	result     = &publicIpResponse{}
+	
+	query := "api_password="+api.Pass+"&op="+request.op
+	if(request.Sid != ""){ 
+		query += "&sid=" + request.Sid
+	}else{
+		query += "&client_mac=" + html.EscapeString(request.ClientMac)
+		query += "&ppli=" + request.Ppli
+	}
+	
+	parsed_body, err := ant.InnGateApiRequest(query)
+	if( err != nil){ return nil, err }
+	
+	err = result.findCommoners(parsed_body)
+	//if( err != nil){ return nil, err }
+	
+	for _, v := range parsed_body{
+		//TODO: API does not indicate a field that returns the IP.  Need testing with a site that gives out Public IPs.
+		switch v[1]{
+	 	default: 
+	 		//fmt.Println("unknown key: " + v[1])
+	 	}
+	}
+	
+	return result, nil
+}
+type publicIpResponse struct{
+	responseCommon
+	
+}
+type PublicIpRequest struct{
+	requestCommon
+	Sid string
+	ClientMac, Ppli string
+}
+//////////////////////////////////////////////////////////
+
 //  ApiVersion performs the an API request for op=api_version
 //  
 //  No optional or required arguments.
